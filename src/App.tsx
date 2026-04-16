@@ -262,10 +262,6 @@ export default function App() {
     XLSX.writeFile(wb, `Borehole_Treasury_Export_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
-  const handleSwitchBin = () => {
-    // JSONBin logic removed
-  };
-
   const handleSetGuestPassword = (hash: string) => {
     setGuestPasswordHash(hash);
     saveData(transactions, passwordHash, hash);
@@ -308,15 +304,11 @@ export default function App() {
           balance={balance}
           totalIncome={totalIncome}
           totalExpense={totalExpense}
-          binId="FIREBASE"
           syncStatus={syncStatus}
           dataSource={dataSource}
           lastSyncTime={lastSyncTime}
           onUploadExcel={isGuest ? () => {} : handleExcelUpload}
           onDownloadExcel={handleExcelDownload}
-          onSyncCloud={user && !isGuest ? () => saveData(transactions) : undefined}
-          onMigrateToCloud={undefined}
-          onSwitchBin={() => {}}
         />
 
         <main className="flex-1">

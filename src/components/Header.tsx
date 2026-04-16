@@ -8,30 +8,22 @@ interface HeaderProps {
   balance: number;
   totalIncome: number;
   totalExpense: number;
-  binId: string;
   syncStatus: 'syncing' | 'success' | 'error' | 'warning';
-  dataSource: 'firebase' | 'jsonbin' | 'local' | 'syncing';
+  dataSource: 'firebase' | 'local' | 'syncing';
   lastSyncTime?: Date;
   onUploadExcel: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onDownloadExcel: () => void;
-  onSyncCloud?: () => void;
-  onMigrateToCloud?: () => void;
-  onSwitchBin: () => void;
 }
 
 export default function Header({
   balance,
   totalIncome,
   totalExpense,
-  binId,
   syncStatus,
   dataSource,
   lastSyncTime,
   onUploadExcel,
   onDownloadExcel,
-  onSyncCloud,
-  onMigrateToCloud,
-  onSwitchBin,
 }: HeaderProps) {
   const [showSyncInfo, setShowSyncInfo] = useState(false);
 
@@ -64,7 +56,7 @@ export default function Header({
                   syncStatus === 'warning' && 'bg-accent'
                 )}
               />
-              {syncStatus === 'syncing' ? 'Syncing' : syncStatus === 'success' ? 'Protected' : 'Error'}
+              {syncStatus === 'syncing' ? 'Updating' : syncStatus === 'success' ? 'Protected' : 'Error'}
               <span className="ml-1 opacity-40">({dataSource})</span>
               <Info className="h-3 w-3 opacity-50" />
             </button>
@@ -77,57 +69,32 @@ export default function Header({
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
                   className="absolute right-0 top-full mt-4 z-50 w-64 bg-card border border-border p-6 shadow-2xl"
                 >
-                  <h4 className="text-[10px] uppercase tracking-[2px] text-accent mb-4 font-bold">Cloud Synchronization</h4>
+                  <h4 className="text-[10px] uppercase tracking-[2px] text-accent mb-4 font-bold">Cloud Security</h4>
                   <div className="space-y-4">
                     <div className="flex justify-between items-center text-[10px] uppercase tracking-[1px]">
                       <span className="text-text-secondary">Status</span>
                       <span className={cn(
                         "font-bold",
                         syncStatus === 'success' ? "text-green-400" : "text-accent"
-                      )}>{syncStatus.toUpperCase()}</span>
+                      )}>{syncStatus === 'success' ? 'ENCRYPTED' : syncStatus.toUpperCase()}</span>
                     </div>
                     <div className="flex justify-between items-center text-[10px] uppercase tracking-[1px]">
                       <span className="text-text-secondary">Source</span>
                       <span className="text-text-primary font-bold">{dataSource.toUpperCase()}</span>
                     </div>
                     <div className="flex justify-between items-center text-[10px] uppercase tracking-[1px]">
-                      <span className="text-text-secondary">Last Sync</span>
+                      <span className="text-text-secondary">Last Update</span>
                       <span className="text-text-primary">
                         {lastSyncTime ? format(lastSyncTime, 'HH:mm:ss') : 'NEVER'}
                       </span>
                     </div>
                   </div>
-                  {syncStatus === 'error' && (
-                    <p className="mt-4 text-[9px] text-red-400 leading-relaxed italic">
-                      Connection interrupted. Check network or master password.
-                    </p>
-                  )}
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
           
           <div className="flex gap-2">
-            {onSyncCloud && (
-              <button 
-                onClick={onSyncCloud}
-                className="p-2 border border-border rounded-sm hover:border-accent transition-all cursor-pointer text-text-secondary hover:text-accent"
-                title="Sync to Cloud"
-              >
-                <RefreshCw className={cn("h-4 w-4", syncStatus === 'syncing' && "animate-spin")} />
-              </button>
-            )}
-
-            {onMigrateToCloud && (
-              <button 
-                onClick={onMigrateToCloud}
-                className="p-2 border border-border rounded-sm hover:border-accent transition-all cursor-pointer text-text-secondary hover:text-accent"
-                title="Migrate JSONBin to Firebase"
-              >
-                <Database className="h-4 w-4" />
-              </button>
-            )}
-
             <label className="p-2 border border-border rounded-sm hover:border-accent transition-all cursor-pointer text-text-secondary hover:text-accent" title="Upload Excel">
               <FileUp className="h-4 w-4" />
               <input
@@ -146,13 +113,6 @@ export default function Header({
               <Download className="h-4 w-4" />
             </button>
           </div>
-
-          <button 
-            onClick={onSwitchBin}
-            className="text-[10px] uppercase tracking-[1.5px] border border-accent text-accent px-4 py-2 hover:bg-accent hover:text-bg transition-all"
-          >
-            Switch Bin
-          </button>
         </div>
 
         <div className="text-right">
