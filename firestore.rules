@@ -35,6 +35,10 @@ service cloud.firestore {
     // ===============================================================
     // Rules
     // ===============================================================
+    match /shared/{documentId} {
+      allow read, write: if isAuthenticated();
+    }
+
     match /users/{userId} {
       allow read: if isOwner(userId);
       

@@ -10,10 +10,11 @@ export interface Transaction {
 export interface BinData {
   transactions: Transaction[];
   passwordHash: string | null;
+  guestPasswordHash?: string | null;
 }
 
 export type FilterType = 'all' | 'income' | 'expense';
-export type PageType = 'journal' | 'accounting';
+export type PageType = 'journal' | 'accounting' | 'settings';
 
 export const CATEGORIES = {
   income: ["Water Sales", "Contributions", "Donations", "Gov Grant", "Refunds", "Other Income"],

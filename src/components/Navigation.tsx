@@ -5,9 +5,10 @@ import { PageType } from '../types';
 interface NavigationProps {
   currentPage: PageType;
   onPageChange: (page: PageType) => void;
+  isGuest: boolean;
 }
 
-export default function Navigation({ currentPage, onPageChange }: NavigationProps) {
+export default function Navigation({ currentPage, onPageChange, isGuest }: NavigationProps) {
   return (
     <nav className="w-20 h-screen bg-black border-r border-border flex flex-col items-center py-10 gap-10 sticky top-0 z-40">
       <div className="font-serif text-2xl font-bold text-accent mb-4">B</div>
@@ -33,6 +34,19 @@ export default function Navigation({ currentPage, onPageChange }: NavigationProp
       >
         Accounting
       </button>
+
+      {!isGuest && (
+        <button
+          onClick={() => onPageChange('settings')}
+          className={cn(
+            'nav-item text-[10px] uppercase tracking-[2px] cursor-pointer transition-all duration-300',
+            'writing-vertical-rl rotate-180',
+            currentPage === 'settings' ? 'text-accent font-semibold' : 'text-text-secondary hover:text-text-primary'
+          )}
+        >
+          Settings
+        </button>
+      )}
 
       <style dangerouslySetInnerHTML={{ __html: `
         .writing-vertical-rl {

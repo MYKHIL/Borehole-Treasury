@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Transaction, FilterType } from '../types';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Search, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
 import { cn } from '../lib/utils';
@@ -24,13 +24,23 @@ export default function JournalPage({
   onSelectTransaction,
   onBulkDelete,
 }: JournalPageProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+
   const filtered = transactions
     .filter((tx) => filter === 'all' || tx.type === filter)
+    .filter((tx) => {
+      if (!searchQuery) return true;
+      const query = searchQuery.toLowerCase();
+      return (
+        tx.name.toLowerCase().includes(query) ||
+        tx.category.toLowerCase().includes(query)
+      );
+    })
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   return (
     <div className="px-12 py-10 max-w-6xl mx-auto">
-      <div className="flex justify-between items-center mb-10">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-10">
         <div className="flex gap-4">
           <button
             onClick={onAddIncome}
@@ -46,22 +56,43 @@ export default function JournalPage({
           </button>
         </div>
 
-        <div className="flex gap-8 border-b border-border pb-2">
-          {(['all', 'income', 'expense'] as FilterType[]).map((f) => (
-            <button
-              key={f}
-              onClick={() => onSetFilter(f)}
-              className={cn(
-                'text-[11px] uppercase tracking-[1.5px] transition-all relative pb-2',
-                filter === f ? 'text-accent font-bold' : 'text-text-secondary hover:text-text-primary'
-              )}
-            >
-              {f}
-              {filter === f && (
-                <motion.div layoutId="activeFilter" className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent" />
-              )}
-            </button>
-          ))}
+        <div className="flex flex-col sm:flex-row gap-6 items-center w-full lg:w-auto">
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-text-secondary" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="SEARCH ENTRIES..."
+              className="w-full bg-card border border-border focus:border-accent p-3 pl-10 outline-none text-[10px] uppercase tracking-[1px] text-text-primary transition-all"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-all"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+
+          <div className="flex gap-8 border-b border-border pb-2">
+            {(['all', 'income', 'expense'] as FilterType[]).map((f) => (
+              <button
+                key={f}
+                onClick={() => onSetFilter(f)}
+                className={cn(
+                  'text-[11px] uppercase tracking-[1.5px] transition-all relative pb-2',
+                  filter === f ? 'text-accent font-bold' : 'text-text-secondary hover:text-text-primary'
+                )}
+              >
+                {f}
+                {filter === f && (
+                  <motion.div layoutId="activeFilter" className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent" />
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

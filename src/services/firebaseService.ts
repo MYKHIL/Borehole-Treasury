@@ -15,28 +15,31 @@ import { Transaction, BinData } from '../types';
 
 export const saveTransactionsToFirebase = async (userId: string, transactions: Transaction[]) => {
   try {
-    console.log(`Saving ${transactions.length} transactions to Firebase for user ${userId}...`);
-    const batch = writeBatch(db);
-    
-    for (const tx of transactions) {
-      const txRef = doc(db, `users/${userId}/transactions`, tx.id);
-      batch.set(txRef, { ...tx, userId });
-    }
-    
-    await batch.commit();
-    console.log("Firebase sync successful.");
+    console.log(`Saving ${transactions.length} transactions to shared Firebase document...`);
+    const sharedRef = doc(db, 'shared', 'transactions');
+    await setDoc(sharedRef, { 
+      transactions, 
+      lastUpdatedBy: userId,
+      updatedAt: new Date().toISOString()
+    });
+    console.log("Shared Firebase sync successful.");
   } catch (error) {
-    console.error("Firebase sync failed:", error);
-    handleFirestoreError(error, OperationType.WRITE, `users/${userId}/transactions`);
+    console.error("Shared Firebase sync failed:", error);
+    handleFirestoreError(error, OperationType.WRITE, 'shared/transactions');
   }
 };
 
-export const saveConfigToFirebase = async (userId: string, passwordHash: string) => {
+export const saveConfigToFirebase = async (userId: string, passwordHash: string, guestPasswordHash?: string | null) => {
   try {
-    const configRef = doc(db, `users/${userId}/config/main`);
-    await setDoc(configRef, { passwordHash, userId });
+    const configRef = doc(db, 'shared', 'config');
+    await setDoc(configRef, { 
+      passwordHash, 
+      guestPasswordHash: guestPasswordHash || null,
+      lastUpdatedBy: userId,
+      updatedAt: new Date().toISOString()
+    });
   } catch (error) {
-    handleFirestoreError(error, OperationType.WRITE, `users/${userId}/config/main`);
+    handleFirestoreError(error, OperationType.WRITE, 'shared/config');
   }
 };
 

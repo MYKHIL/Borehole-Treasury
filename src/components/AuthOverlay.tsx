@@ -4,11 +4,12 @@ import { motion } from 'motion/react';
 import { sha256 } from '../lib/api';
 
 interface AuthOverlayProps {
-  onAuthenticated: (hash: string) => void;
+  onAuthenticated: (hash: string, isGuest?: boolean) => void;
   isSetup: boolean;
+  hasGuestAccess?: boolean;
 }
 
-export default function AuthOverlay({ onAuthenticated, isSetup }: AuthOverlayProps) {
+export default function AuthOverlay({ onAuthenticated, isSetup, hasGuestAccess }: AuthOverlayProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
 
@@ -16,6 +17,12 @@ export default function AuthOverlay({ onAuthenticated, isSetup }: AuthOverlayPro
     e.preventDefault();
     const hash = await sha256(password);
     onAuthenticated(hash);
+  };
+
+  const handleGuestLogin = async () => {
+    if (!hasGuestAccess) return;
+    const hash = await sha256(password);
+    onAuthenticated(hash, true);
   };
 
   return (
@@ -39,7 +46,7 @@ export default function AuthOverlay({ onAuthenticated, isSetup }: AuthOverlayPro
             : 'Authentication Required'}
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <input
             type="password"
             value={password}
@@ -51,12 +58,24 @@ export default function AuthOverlay({ onAuthenticated, isSetup }: AuthOverlayPro
             placeholder="PASSWORD"
             className="w-full bg-transparent border-b border-border focus:border-accent p-4 outline-none font-serif text-center text-xl transition-all text-text-primary placeholder:text-text-secondary/30"
           />
-          <button
-            type="submit"
-            className="w-full py-4 border border-accent text-accent uppercase tracking-[2px] text-xs font-bold hover:bg-accent hover:text-bg transition-all"
-          >
-            {isSetup ? 'Set & Enter' : 'Unlock'}
-          </button>
+          <div className="flex flex-col gap-3 pt-4">
+            <button
+              type="submit"
+              className="w-full py-4 bg-accent text-bg uppercase tracking-[2px] text-xs font-bold hover:scale-[1.02] transition-all"
+            >
+              {isSetup ? 'Set & Enter' : 'Unlock Master'}
+            </button>
+            
+            {!isSetup && hasGuestAccess && (
+              <button
+                type="button"
+                onClick={handleGuestLogin}
+                className="w-full py-4 border border-border text-text-secondary uppercase tracking-[2px] text-[10px] font-bold hover:border-text-primary hover:text-text-primary transition-all"
+              >
+                Enter as Guest
+              </button>
+            )}
+          </div>
         </form>
         {error && (
           <p className="text-red-400 text-[10px] uppercase tracking-[1px] font-bold mt-6">

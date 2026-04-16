@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import html2canvas from 'html2canvas';
-import { Transaction, BinData, FilterType, PageType } from './types';
-import { fetchBin, updateBin } from './lib/api';
+import { Transaction, FilterType, PageType } from './types';
 import { cn } from './lib/utils';
-import { auth, db, googleProvider, signInWithPopup, collection, onSnapshot, query, doc } from './lib/firebase';
+import { auth, db, googleProvider, signInWithPopup, onSnapshot, doc } from './lib/firebase';
 import { saveTransactionsToFirebase, saveConfigToFirebase } from './services/firebaseService';
 import Header from './components/Header';
 import JournalPage from './components/JournalPage';
 import AccountingPage from './components/AccountingPage';
+import SettingsPage from './components/SettingsPage';
 import Navigation from './components/Navigation';
 import AuthOverlay from './components/AuthOverlay';
 import TransactionModal from './components/TransactionModal';
@@ -19,14 +19,17 @@ import NotificationModal from './components/NotificationModal';
 const DEFAULT_BIN_ID = '69ad987d43b1c97be9c15dd3';
 
 export default function App() {
-  const [binId, setBinId] = useState(localStorage.getItem('borehole_active_bin') || DEFAULT_BIN_ID);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [passwordHash, setPasswordHash] = useState<string | null>(null);
+  const [guestPasswordHash, setGuestPasswordHash] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [user, setUser] = useState<any>(null);
   
   const [syncStatus, setSyncStatus] = useState<'syncing' | 'success' | 'error' | 'warning'>('syncing');
+  const [dataSource, setDataSource] = useState<'firebase' | 'local' | 'syncing'>('syncing');
+  const [lastSyncTime, setLastSyncTime] = useState<Date | undefined>(undefined);
   const [currentPage, setCurrentPage] = useState<PageType>('journal');
   const [filter, setFilter] = useState<FilterType>('all');
   
@@ -64,21 +67,25 @@ export default function App() {
   useEffect(() => {
     if (!user) return;
 
-    const q = query(collection(db, `users/${user.uid}/transactions`));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const txs = snapshot.docs.map(doc => doc.data() as Transaction);
-      if (txs.length > 0) {
+    const unsubscribe = onSnapshot(doc(db, 'shared', 'transactions'), (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        const txs = (data.transactions || []) as Transaction[];
         setTransactions(txs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        setDataSource('firebase');
       }
+      setLastSyncTime(new Date());
       setIsAuthReady(true);
     }, (error) => {
       console.error("Firestore Error:", error);
       setIsAuthReady(true);
     });
 
-    const configUnsubscribe = onSnapshot(doc(db, `users/${user.uid}/config/main`), (docSnap) => {
+    const configUnsubscribe = onSnapshot(doc(db, 'shared', 'config'), (docSnap) => {
       if (docSnap.exists()) {
-        setPasswordHash(docSnap.data().passwordHash);
+        const data = docSnap.data();
+        setPasswordHash(data.passwordHash);
+        setGuestPasswordHash(data.guestPasswordHash || null);
       }
     });
 
@@ -88,63 +95,23 @@ export default function App() {
     };
   }, [user]);
 
-  // JSONBin Fallback / Initial Load
+  // Initial Load (Firebase only)
   useEffect(() => {
-    if (isAuthReady && user && transactions.length === 0) {
-      loadData();
-    } else if (isAuthReady && !user) {
-      loadData();
+    if (isAuthReady && !user) {
+      // If not logged in, we still want to show the auth overlay
+      // But we don't load data until authenticated
     }
-  }, [isAuthReady, user, binId]);
+  }, [isAuthReady, user]);
 
-  // Auto-sync to Firebase when user logs in for the first time
-  useEffect(() => {
-    if (user && isAuthenticated && transactions.length > 0) {
-      // Check if we need to push to Firebase
-      const checkAndSync = async () => {
-        try {
-          const q = query(collection(db, `users/${user.uid}/transactions`));
-          const unsubscribe = onSnapshot(q, (snapshot) => {
-            if (snapshot.empty) {
-              console.log("Firebase is empty, performing initial sync...");
-              saveData(transactions);
-            }
-            unsubscribe();
-          });
-        } catch (e) {
-          console.error("Auto-sync check failed", e);
-        }
-      };
-      checkAndSync();
-    }
-  }, [user, isAuthenticated]);
-
-  const loadData = async () => {
+  const saveData = async (newTransactions: Transaction[], newHash: string | null = passwordHash, newGuestHash: string | null = guestPasswordHash) => {
     setSyncStatus('syncing');
     try {
-      const data = await fetchBin(binId);
-      if (data) {
-        setTransactions(data.transactions || []);
-        setPasswordHash(data.passwordHash || null);
-      }
-      setSyncStatus('success');
-    } catch (error) {
-      console.error(error);
-      setSyncStatus('error');
-    }
-  };
-
-  const saveData = async (newTransactions: Transaction[], newHash: string | null = passwordHash) => {
-    setSyncStatus('syncing');
-    try {
-      // 1. Save to Firebase (Primary)
       if (user) {
         await saveTransactionsToFirebase(user.uid, newTransactions);
-        if (newHash) await saveConfigToFirebase(user.uid, newHash);
+        if (newHash) await saveConfigToFirebase(user.uid, newHash, newGuestHash);
       }
-
-      // 2. Save to JSONBin (Secondary)
-      await updateBin(binId, { transactions: newTransactions, passwordHash: newHash });
+      setLastSyncTime(new Date());
+      setDataSource('firebase');
       setSyncStatus('success');
     } catch (error) {
       console.error(error);
@@ -166,67 +133,29 @@ export default function App() {
     }
   };
 
-  const handleMigrate = async () => {
-    if (!user) {
-      setNotification({
-        isOpen: true,
-        title: 'Authentication Required',
-        message: 'Please sign in with Google before migrating your data.',
-        type: 'info',
-      });
-      return;
-    }
-
-    if (!confirm('This will migrate all data from the current JSONBin to your private Firebase storage. Continue?')) {
-      return;
-    }
-
-    setSyncStatus('syncing');
-    try {
-      // 1. Fetch fresh data from JSONBin
-      const data = await fetchBin(binId);
-      if (!data || !data.transactions) {
-        throw new Error('No data found in JSONBin to migrate.');
-      }
-
-      // 2. Save to Firebase
-      await saveTransactionsToFirebase(user.uid, data.transactions);
-      if (data.passwordHash) {
-        await saveConfigToFirebase(user.uid, data.passwordHash);
-      }
-
-      setSyncStatus('success');
-      setNotification({
-        isOpen: true,
-        title: 'Migration Successful',
-        message: `Successfully migrated ${data.transactions.length} records to your private cloud storage.`,
-        type: 'success',
-      });
-    } catch (error: any) {
-      console.error('Migration failed', error);
-      setSyncStatus('error');
-      setNotification({
-        isOpen: true,
-        title: 'Migration Failed',
-        message: error.message || 'An unexpected error occurred during migration.',
-        type: 'error',
-      });
-    }
-  };
-
-  const handleAuthenticated = (hash: string) => {
+  const handleAuthenticated = (hash: string, asGuest: boolean = false) => {
     if (!passwordHash) {
       setPasswordHash(hash);
       saveData(transactions, hash);
       setIsAuthenticated(true);
+      setIsGuest(false);
+    } else if (asGuest) {
+      if (hash === guestPasswordHash) {
+        setIsAuthenticated(true);
+        setIsGuest(true);
+      } else {
+        alert('Incorrect guest password');
+      }
     } else if (hash === passwordHash) {
       setIsAuthenticated(true);
+      setIsGuest(false);
     } else {
       alert('Incorrect password');
     }
   };
 
   const handleAddTransaction = (txData: Partial<Transaction>) => {
+    if (isGuest) return;
     let newTransactions: Transaction[];
     if (selectedTx) {
       newTransactions = transactions.map((t) =>
@@ -249,6 +178,7 @@ export default function App() {
     if (!selectedTx) return;
 
     if (action === 'delete') {
+      if (isGuest) return;
       if (confirm('Are you sure you want to delete this record?')) {
         const newTransactions = transactions.filter((t) => t.id !== selectedTx.id);
         setTransactions(newTransactions);
@@ -270,6 +200,7 @@ export default function App() {
   };
 
   const handleBulkDelete = () => {
+    if (isGuest) return;
     const count = transactions.filter((t) => filter === 'all' || t.type === filter).length;
     if (count === 0) return;
 
@@ -281,6 +212,7 @@ export default function App() {
   };
 
   const handleExcelUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (isGuest) return;
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -331,11 +263,17 @@ export default function App() {
   };
 
   const handleSwitchBin = () => {
-    const newId = prompt('Enter the new Bin ID to connect to:', binId);
-    if (newId && newId.length > 10) {
-      setBinId(newId);
-      localStorage.setItem('borehole_active_bin', newId);
-    }
+    // JSONBin logic removed
+  };
+
+  const handleSetGuestPassword = (hash: string) => {
+    setGuestPasswordHash(hash);
+    saveData(transactions, passwordHash, hash);
+  };
+
+  const handleRevokeGuestPassword = () => {
+    setGuestPasswordHash(null);
+    saveData(transactions, passwordHash, null);
   };
 
   const totalIncome = transactions.reduce((acc, t) => (t.type === 'income' ? acc + t.amount : acc), 0);
@@ -353,10 +291,14 @@ export default function App() {
   return (
     <div className="min-h-screen bg-bg font-sans text-text-primary flex">
       {!isAuthenticated && (
-        <AuthOverlay onAuthenticated={handleAuthenticated} isSetup={!passwordHash} />
+        <AuthOverlay 
+          onAuthenticated={handleAuthenticated} 
+          isSetup={!passwordHash} 
+          hasGuestAccess={!!guestPasswordHash}
+        />
       )}
 
-      <Navigation currentPage={currentPage} onPageChange={setCurrentPage} />
+      <Navigation currentPage={currentPage} onPageChange={setCurrentPage} isGuest={isGuest} />
 
       <div className={cn(
         "flex-1 flex flex-col min-h-screen",
@@ -366,13 +308,15 @@ export default function App() {
           balance={balance}
           totalIncome={totalIncome}
           totalExpense={totalExpense}
-          binId={binId}
+          binId="FIREBASE"
           syncStatus={syncStatus}
-          onUploadExcel={handleExcelUpload}
+          dataSource={dataSource}
+          lastSyncTime={lastSyncTime}
+          onUploadExcel={isGuest ? () => {} : handleExcelUpload}
           onDownloadExcel={handleExcelDownload}
-          onSyncCloud={user ? () => saveData(transactions) : undefined}
-          onMigrateToCloud={handleMigrate}
-          onSwitchBin={handleSwitchBin}
+          onSyncCloud={user && !isGuest ? () => saveData(transactions) : undefined}
+          onMigrateToCloud={undefined}
+          onSwitchBin={() => {}}
         />
 
         <main className="flex-1">
@@ -381,12 +325,12 @@ export default function App() {
               transactions={transactions}
               filter={filter}
               onSetFilter={setFilter}
-              onAddIncome={() => {
+              onAddIncome={isGuest ? () => {} : () => {
                 setModalType('income');
                 setSelectedTx(null);
                 setIsTxModalOpen(true);
               }}
-              onAddExpense={() => {
+              onAddExpense={isGuest ? () => {} : () => {
                 setModalType('expense');
                 setSelectedTx(null);
                 setIsTxModalOpen(true);
@@ -395,10 +339,17 @@ export default function App() {
                 setSelectedTx(tx);
                 setIsActionModalOpen(true);
               }}
-              onBulkDelete={handleBulkDelete}
+              onBulkDelete={isGuest ? () => {} : handleBulkDelete}
             />
-          ) : (
+          ) : currentPage === 'accounting' ? (
             <AccountingPage transactions={transactions} />
+          ) : (
+            <SettingsPage 
+              onSetGuestPassword={handleSetGuestPassword} 
+              onRevokeGuestPassword={handleRevokeGuestPassword}
+              hasGuestPassword={!!guestPasswordHash}
+              isGuest={isGuest}
+            />
           )}
         </main>
 
