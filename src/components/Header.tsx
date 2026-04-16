@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileUp, Download, RefreshCw } from 'lucide-react';
+import { FileUp, Download, RefreshCw, Database } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { format } from 'date-fns';
 
@@ -12,6 +12,7 @@ interface HeaderProps {
   onUploadExcel: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onDownloadExcel: () => void;
   onSyncCloud?: () => void;
+  onMigrateToCloud?: () => void;
   onSwitchBin: () => void;
 }
 
@@ -24,6 +25,7 @@ export default function Header({
   onUploadExcel,
   onDownloadExcel,
   onSyncCloud,
+  onMigrateToCloud,
   onSwitchBin,
 }: HeaderProps) {
   return (
@@ -60,6 +62,16 @@ export default function Header({
                 title="Sync to Cloud"
               >
                 <RefreshCw className={cn("h-4 w-4", syncStatus === 'syncing' && "animate-spin")} />
+              </button>
+            )}
+
+            {onMigrateToCloud && (
+              <button 
+                onClick={onMigrateToCloud}
+                className="p-2 border border-border rounded-sm hover:border-accent transition-all cursor-pointer text-text-secondary hover:text-accent"
+                title="Migrate JSONBin to Firebase"
+              >
+                <Database className="h-4 w-4" />
               </button>
             )}
 

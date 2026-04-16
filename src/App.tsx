@@ -14,6 +14,7 @@ import AuthOverlay from './components/AuthOverlay';
 import TransactionModal from './components/TransactionModal';
 import ActionModal from './components/ActionModal';
 import ReceiptTemplate from './components/ReceiptTemplate';
+import NotificationModal from './components/NotificationModal';
 
 const DEFAULT_BIN_ID = '69ad987d43b1c97be9c15dd3';
 
@@ -33,6 +34,18 @@ export default function App() {
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   const [modalType, setModalType] = useState<'income' | 'expense'>('income');
+
+  const [notification, setNotification] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info',
+  });
 
   const receiptRef = useRef<HTMLDivElement>(null);
 
@@ -144,6 +157,60 @@ export default function App() {
       await signInWithPopup(auth, googleProvider);
     } catch (error) {
       console.error("Login failed", error);
+      setNotification({
+        isOpen: true,
+        title: 'Login Failed',
+        message: 'Could not authenticate with Google. Please try again.',
+        type: 'error',
+      });
+    }
+  };
+
+  const handleMigrate = async () => {
+    if (!user) {
+      setNotification({
+        isOpen: true,
+        title: 'Authentication Required',
+        message: 'Please sign in with Google before migrating your data.',
+        type: 'info',
+      });
+      return;
+    }
+
+    if (!confirm('This will migrate all data from the current JSONBin to your private Firebase storage. Continue?')) {
+      return;
+    }
+
+    setSyncStatus('syncing');
+    try {
+      // 1. Fetch fresh data from JSONBin
+      const data = await fetchBin(binId);
+      if (!data || !data.transactions) {
+        throw new Error('No data found in JSONBin to migrate.');
+      }
+
+      // 2. Save to Firebase
+      await saveTransactionsToFirebase(user.uid, data.transactions);
+      if (data.passwordHash) {
+        await saveConfigToFirebase(user.uid, data.passwordHash);
+      }
+
+      setSyncStatus('success');
+      setNotification({
+        isOpen: true,
+        title: 'Migration Successful',
+        message: `Successfully migrated ${data.transactions.length} records to your private cloud storage.`,
+        type: 'success',
+      });
+    } catch (error: any) {
+      console.error('Migration failed', error);
+      setSyncStatus('error');
+      setNotification({
+        isOpen: true,
+        title: 'Migration Failed',
+        message: error.message || 'An unexpected error occurred during migration.',
+        type: 'error',
+      });
     }
   };
 
@@ -304,6 +371,7 @@ export default function App() {
           onUploadExcel={handleExcelUpload}
           onDownloadExcel={handleExcelDownload}
           onSyncCloud={user ? () => saveData(transactions) : undefined}
+          onMigrateToCloud={handleMigrate}
           onSwitchBin={handleSwitchBin}
         />
 
@@ -362,6 +430,14 @@ export default function App() {
       />
 
       <ReceiptTemplate ref={receiptRef} transaction={selectedTx} />
+
+      <NotificationModal
+        isOpen={notification.isOpen}
+        onClose={() => setNotification({ ...notification, isOpen: false })}
+        title={notification.title}
+        message={notification.message}
+        type={notification.type}
+      />
     </div>
   );
 }
