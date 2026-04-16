@@ -3,7 +3,7 @@ import * as XLSX from 'xlsx';
 import html2canvas from 'html2canvas';
 import { Transaction, FilterType, PageType } from './types';
 import { cn } from './lib/utils';
-import { auth, db, googleProvider, signInWithPopup, onSnapshot, doc } from './lib/firebase';
+import { auth, db, onSnapshot, doc } from './lib/firebase';
 import { saveTransactionsToFirebase, saveConfigToFirebase } from './services/firebaseService';
 import Header from './components/Header';
 import JournalPage from './components/JournalPage';
@@ -25,7 +25,6 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
   const [isAuthReady, setIsAuthReady] = useState(false);
-  const [user, setUser] = useState<any>(null);
   
   const [syncStatus, setSyncStatus] = useState<'syncing' | 'success' | 'error' | 'warning'>('syncing');
   const [dataSource, setDataSource] = useState<'firebase' | 'local' | 'syncing'>('syncing');
@@ -52,21 +51,8 @@ export default function App() {
 
   const receiptRef = useRef<HTMLDivElement>(null);
 
-  // Firebase Auth Listener
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((u) => {
-      setUser(u);
-      if (!u) {
-        setIsAuthReady(true);
-      }
-    });
-    return () => unsubscribe();
-  }, []);
-
   // Firebase Data Listener
   useEffect(() => {
-    if (!user) return;
-
     const unsubscribe = onSnapshot(doc(db, 'shared', 'transactions'), (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data();
@@ -93,43 +79,20 @@ export default function App() {
       unsubscribe();
       configUnsubscribe();
     };
-  }, [user]);
-
-  // Initial Load (Firebase only)
-  useEffect(() => {
-    if (isAuthReady && !user) {
-      // If not logged in, we still want to show the auth overlay
-      // But we don't load data until authenticated
-    }
-  }, [isAuthReady, user]);
+  }, []);
 
   const saveData = async (newTransactions: Transaction[], newHash: string | null = passwordHash, newGuestHash: string | null = guestPasswordHash) => {
     setSyncStatus('syncing');
     try {
-      if (user) {
-        await saveTransactionsToFirebase(user.uid, newTransactions);
-        if (newHash) await saveConfigToFirebase(user.uid, newHash, newGuestHash);
-      }
+      await saveTransactionsToFirebase(newTransactions);
+      if (newHash) await saveConfigToFirebase(newHash, newGuestHash);
+      
       setLastSyncTime(new Date());
       setDataSource('firebase');
       setSyncStatus('success');
     } catch (error) {
       console.error(error);
       setSyncStatus('error');
-    }
-  };
-
-  const handleLogin = async () => {
-    try {
-      await signInWithPopup(auth, googleProvider);
-    } catch (error) {
-      console.error("Login failed", error);
-      setNotification({
-        isOpen: true,
-        title: 'Login Failed',
-        message: 'Could not authenticate with Google. Please try again.',
-        type: 'error',
-      });
     }
   };
 
@@ -344,18 +307,6 @@ export default function App() {
             />
           )}
         </main>
-
-        {/* Firebase Login Prompt */}
-        {!user && isAuthenticated && (
-          <div className="fixed bottom-8 right-8 z-40">
-            <button 
-              onClick={handleLogin}
-              className="bg-accent text-bg px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-[1.5px] shadow-2xl hover:scale-105 transition-all border border-accent/20"
-            >
-              Cloud Sync with Google
-            </button>
-          </div>
-        )}
       </div>
 
       <TransactionModal
