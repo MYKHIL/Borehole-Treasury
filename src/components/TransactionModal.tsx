@@ -71,10 +71,10 @@ export default function TransactionModal({
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-card w-full max-w-md border border-border p-10 shadow-2xl relative"
+            className="bg-card w-full max-w-md border border-border p-6 sm:p-10 shadow-2xl relative max-h-[90vh] overflow-y-auto"
           >
-            <div className="flex justify-between items-start mb-10">
-              <h2 className="font-serif text-3xl font-light text-text-primary">
+            <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-8 sm:mb-10">
+              <h2 className="font-serif text-2xl sm:text-3xl font-light text-text-primary">
                 {editTx ? 'Edit Entry' : 'New Entry'}
               </h2>
               <div className="border border-border p-1 flex gap-1">

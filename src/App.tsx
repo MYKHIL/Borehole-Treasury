@@ -285,7 +285,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-bg font-sans text-text-primary flex">
+    <div className="min-h-screen bg-bg font-sans text-text-primary flex flex-col sm:flex-row">
       {!isAuthenticated && (
         <AuthOverlay 
           onAuthenticated={handleAuthenticated} 
@@ -297,7 +297,7 @@ export default function App() {
       <Navigation currentPage={currentPage} onPageChange={setCurrentPage} isGuest={isGuest} />
 
       <div className={cn(
-        "flex-1 flex flex-col min-h-screen",
+        "flex-1 flex flex-col min-h-screen pb-16 sm:pb-0",
         !isAuthenticated ? 'blur-xl pointer-events-none' : ''
       )}>
         <Header

@@ -34,7 +34,7 @@ export default function AuthOverlay({ onAuthenticated, isSetup, hasGuestAccess }
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-card w-full max-w-sm border border-border p-12 text-center"
+        className="bg-card w-full max-w-sm border border-border p-8 sm:p-12 text-center"
       >
         <div className="font-serif text-4xl font-bold text-accent mb-8">B</div>
         <h2 className="font-serif text-2xl font-light text-text-primary mb-2">

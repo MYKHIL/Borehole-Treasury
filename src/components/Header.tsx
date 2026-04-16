@@ -28,18 +28,18 @@ export default function Header({
   const [showSyncInfo, setShowSyncInfo] = useState(false);
 
   return (
-    <header className="px-12 py-10 flex justify-between items-end border-b border-border bg-bg">
+    <header className="px-6 sm:px-12 py-8 sm:py-10 flex flex-col sm:flex-row justify-between items-start sm:items-end border-b border-border bg-bg gap-8 sm:gap-0">
       <div className="welcome-text">
         <p className="text-text-secondary text-[10px] uppercase tracking-[2px] mb-2">
           {format(new Date(), 'EEEE, MMMM dd').toUpperCase()}
         </p>
-        <h1 className="font-serif text-5xl font-light text-text-primary leading-none">
+        <h1 className="font-serif text-4xl sm:text-5xl font-light text-text-primary leading-none">
           Borehole Treasury
         </h1>
       </div>
 
-      <div className="flex flex-col items-end gap-6">
-        <div className="flex gap-4 items-center">
+      <div className="flex flex-col items-start sm:items-end gap-6 w-full sm:w-auto">
+        <div className="flex flex-wrap gap-4 items-center w-full sm:justify-end">
           <div className="relative">
             <button
               onMouseEnter={() => setShowSyncInfo(true)}

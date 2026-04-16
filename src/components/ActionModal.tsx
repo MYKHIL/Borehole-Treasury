@@ -25,9 +25,9 @@ export default function ActionModal({ isOpen, onClose, onAction }: ActionModalPr
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-card w-full max-w-sm border border-border p-10 shadow-2xl relative"
+            className="bg-card w-full max-w-sm border border-border p-8 sm:p-10 shadow-2xl relative"
           >
-            <h2 className="font-serif text-2xl font-light text-text-primary mb-10 text-center">Entry Options</h2>
+            <h2 className="font-serif text-2xl font-light text-text-primary mb-8 sm:mb-10 text-center">Entry Options</h2>
             <div className="grid gap-4">
               <button
                 onClick={() => onAction('receipt')}

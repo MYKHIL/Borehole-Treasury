@@ -58,22 +58,22 @@ export default function AccountingPage({ transactions }: AccountingPageProps) {
   };
 
   return (
-    <div className="px-12 py-10 max-w-6xl mx-auto">
-      <h3 className="font-serif text-4xl font-light text-text-primary mb-10">Accounting Analysis</h3>
+    <div className="px-6 sm:px-12 py-8 sm:py-10 max-w-6xl mx-auto">
+      <h3 className="font-serif text-3xl sm:text-4xl font-light text-text-primary mb-10">Accounting Analysis</h3>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-        <div className="bg-card border border-border p-8 rounded-sm">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mb-12">
+        <div className="bg-card border border-border p-6 sm:p-8 rounded-sm">
           <span className="text-[11px] uppercase tracking-[2px] text-text-secondary block mb-4">Total Income</span>
-          <p className="font-serif text-4xl text-accent">₵{totalIncome.toLocaleString()}</p>
+          <p className="font-serif text-3xl sm:text-4xl text-accent">₵{totalIncome.toLocaleString()}</p>
         </div>
-        <div className="bg-card border border-border p-8 rounded-sm">
+        <div className="bg-card border border-border p-6 sm:p-8 rounded-sm">
           <span className="text-[11px] uppercase tracking-[2px] text-text-secondary block mb-4">Total Expenses</span>
-          <p className="font-serif text-4xl text-text-primary">₵{totalExpense.toLocaleString()}</p>
+          <p className="font-serif text-3xl sm:text-4xl text-text-primary">₵{totalExpense.toLocaleString()}</p>
         </div>
-        <div className="bg-card border border-border p-8 rounded-sm flex justify-between items-center">
+        <div className="bg-card border border-border p-6 sm:p-8 rounded-sm flex justify-between items-center md:col-span-2 lg:col-span-1">
           <div>
             <span className="text-[11px] uppercase tracking-[2px] text-text-secondary block mb-4">Net Cash Position</span>
-            <p className="font-serif text-4xl text-text-primary">₵{netPosition.toLocaleString()}</p>
+            <p className="font-serif text-3xl sm:text-4xl text-text-primary">₵{netPosition.toLocaleString()}</p>
           </div>
           <div className="p-4 border border-border rounded-full">
             {netPosition >= 0 ? <TrendingUp className="h-6 w-6 text-accent" /> : <TrendingDown className="h-6 w-6 text-red-400" />}
@@ -81,12 +81,12 @@ export default function AccountingPage({ transactions }: AccountingPageProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 pb-20 sm:pb-0">
         <div>
           <h4 className="text-[11px] uppercase tracking-[2px] text-text-secondary mb-6 border-b border-border pb-2">
             Income Sources
           </h4>
-          <div className="bg-card border border-border p-8 rounded-sm">
+          <div className="bg-card border border-border p-6 sm:p-8 rounded-sm">
             {renderBreakdown(incomeBreakdown, totalIncome, 'bg-accent')}
           </div>
         </div>
@@ -94,7 +94,7 @@ export default function AccountingPage({ transactions }: AccountingPageProps) {
           <h4 className="text-[11px] uppercase tracking-[2px] text-text-secondary mb-6 border-b border-border pb-2">
             Expense Categories
           </h4>
-          <div className="bg-card border border-border p-8 rounded-sm">
+          <div className="bg-card border border-border p-6 sm:p-8 rounded-sm">
             {renderBreakdown(expenseBreakdown, totalExpense, 'bg-text-secondary')}
           </div>
         </div>

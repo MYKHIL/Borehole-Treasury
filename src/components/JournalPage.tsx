@@ -39,18 +39,18 @@ export default function JournalPage({
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   return (
-    <div className="px-12 py-10 max-w-6xl mx-auto">
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-10">
-        <div className="flex gap-4">
+    <div className="px-6 sm:px-12 py-8 sm:py-10 max-w-6xl mx-auto">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-10">
+        <div className="flex flex-wrap gap-3 w-full sm:w-auto">
           <button
             onClick={onAddIncome}
-            className="border border-accent text-accent px-6 py-3 text-[12px] uppercase tracking-[2px] hover:bg-accent hover:text-bg transition-all"
+            className="flex-1 sm:flex-none border border-accent text-accent px-4 sm:px-6 py-3 text-[11px] sm:text-[12px] uppercase tracking-[2px] hover:bg-accent hover:text-bg transition-all"
           >
             Add Income
           </button>
           <button
             onClick={onAddExpense}
-            className="border border-white/20 text-text-primary px-6 py-3 text-[12px] uppercase tracking-[2px] hover:border-white transition-all"
+            className="flex-1 sm:flex-none border border-white/20 text-text-primary px-4 sm:px-6 py-3 text-[11px] sm:text-[12px] uppercase tracking-[2px] hover:border-white transition-all"
           >
             Add Expense
           </button>
@@ -76,7 +76,7 @@ export default function JournalPage({
             )}
           </div>
 
-          <div className="flex gap-8 border-b border-border pb-2">
+          <div className="flex gap-6 sm:gap-8 border-b border-border pb-2 w-full sm:w-auto justify-center sm:justify-start">
             {(['all', 'income', 'expense'] as FilterType[]).map((f) => (
               <button
                 key={f}
