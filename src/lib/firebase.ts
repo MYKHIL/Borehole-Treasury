@@ -1,6 +1,8 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc, collection, query, onSnapshot, deleteDoc, writeBatch } from 'firebase/firestore';
+
+// Standard import for the local config
 import localConfig from '../../firebase-applet-config.json';
 
 // Support for environment variables (Vercel/Production) with fallback to local config
@@ -14,6 +16,16 @@ const firebaseConfig = {
 };
 
 const databaseId = import.meta.env.VITE_FIREBASE_DATABASE_ID || localConfig.firestoreDatabaseId;
+
+// Debugging (Check browser console on Vercel)
+if (import.meta.env.PROD) {
+  console.log('Firebase Config Status:', {
+    hasApiKey: !!firebaseConfig.apiKey,
+    hasAuthDomain: !!firebaseConfig.authDomain,
+    hasProjectId: !!firebaseConfig.projectId,
+    databaseId: databaseId
+  });
+}
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
