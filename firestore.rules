@@ -1,0 +1,55 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    function isValidTransaction(data) {
+      return data.keys().hasAll(['id', 'name', 'amount', 'category', 'type', 'date', 'userId']) &&
+             data.id is string &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.amount is number &&
+             data.category is string && data.category.size() > 0 && data.category.size() < 50 &&
+             data.type in ['income', 'expense'] &&
+             data.date is string &&
+             data.userId == request.auth.uid;
+    }
+
+    function isValidConfig(data) {
+      return data.keys().hasAll(['passwordHash', 'userId']) &&
+             data.passwordHash is string &&
+             data.userId == request.auth.uid;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      
+      match /transactions/{transactionId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidTransaction(request.resource.data);
+        allow update: if isOwner(userId) && isValidTransaction(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+
+      match /config/main {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidConfig(request.resource.data);
+        allow update: if isOwner(userId) && isValidConfig(request.resource.data);
+      }
+    }
+  }
+}

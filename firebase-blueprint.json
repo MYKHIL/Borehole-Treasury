@@ -1,0 +1,39 @@
+{
+  "entities": {
+    "Transaction": {
+      "title": "Transaction",
+      "description": "A financial transaction record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "amount": { "type": "number" },
+        "category": { "type": "string" },
+        "type": { "type": "string", "enum": ["income", "expense"] },
+        "date": { "type": "string", "format": "date" },
+        "userId": { "type": "string" }
+      },
+      "required": ["id", "name", "amount", "category", "type", "date", "userId"]
+    },
+    "TreasuryConfig": {
+      "title": "TreasuryConfig",
+      "description": "Configuration for the treasury, including password hash",
+      "type": "object",
+      "properties": {
+        "passwordHash": { "type": "string" },
+        "userId": { "type": "string" }
+      },
+      "required": ["passwordHash", "userId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "User's financial transactions"
+    },
+    "/users/{userId}/config/main": {
+      "schema": "TreasuryConfig",
+      "description": "User's treasury configuration"
+    }
+  }
+}
